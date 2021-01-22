@@ -1,0 +1,79 @@
+- name: test the win_wins module
+  hosts: all
+  gather_facts: false
+
+  roles:
+    - win_wins
+
+  tasks:
+    - name: Disable DNS for name resolution over WINS for all adapters
+      win_wins:
+        enable_dns: false
+      register: wins
+
+    - name: Test the EnableDNS config
+      assert:
+        that:
+          - wins.config.enable_dns == false
+
+    - name: Disable LMHOSTS lookup for all adapters
+      win_wins:
+        enable_lmhosts_lookup: false
+      register: wins
+
+    - name: Test the EnableLmhosts config
+      assert:
+        that:
+          - wins.config.enable_lmhosts_lookup == false
+
+    - name: Specifies to append test.local to the end of the computer's NetBIOS name for all adapters
+      win_wins:
+        scope_id: test.local
+      register: wins
+
+    - name: Test the ScopeId config
+      assert:
+        that:
+          - wins.config.scope_id == 'test.local'
+
+    - name: Specifies the IP address of the primary WINS server on Ethernet2
+      win_wins:
+        primary_server: 192.168.1.40
+        adapter_names:
+          - Ethernet2
+      register: wins
+
+    - name: Test the NameServer config
+      assert:
+        that:
+          - wins.config.adapters.Ethernet2.primary_server == '192.168.1.40'
+
+    - name: Specifies the IP address of the primary WINS server on Public and Backup adapters
+      win_wins:
+        secondary_server: 192.168.1.50
+        adapter_names:
+          - Public
+          - Backup
+      register: wins
+
+    - name: Test the NameServerBackup config
+      assert:
+        that:
+          - wins.config.adapters.Public.secondary_server == '192.168.1.50'
+          - wins.config.adapters.Backup.secondary_server == '192.168.1.50'
+
+    - name: Specifies the WINS servers on all adapters
+      win_wins:
+        primary_server: 192.168.1.70
+        secondary_server: 192.168.1.80
+      register: wins
+
+    - name: Test the NameServerBackup config
+      assert:
+        that:
+          - wins.config.adapters.Ethernet2.primary_server == '192.168.1.70'
+          - wins.config.adapters.Public.primary_server == '192.168.1.70'
+          - wins.config.adapters.Backup.primary_server == '192.168.1.70'
+          - wins.config.adapters.Ethernet2.secondary_server == '192.168.1.80'
+          - wins.config.adapters.Public.secondary_server == '192.168.1.80'
+          - wins.config.adapters.Backup.secondary_server == '192.168.1.80'
